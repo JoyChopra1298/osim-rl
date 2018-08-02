@@ -2,7 +2,7 @@ import opensim
 import time
 import numpy as np
 
-integrator_accuracy = 3e-2
+integrator_accuracy = 3e-3
 stepsize = 0.017
 model = opensim.Model('../models/gait14dof22musc_pros_20180507.osim')
 
@@ -129,8 +129,11 @@ motFileHeader_to_stateVariableName_dict = {"pelvis_tx":"ground_pelvis/pelvis_tx/
 ## unnessecary wrapper to return state variable name from dict
 def getStateVariableName(motHeader):
 	return motFileHeader_to_stateVariableName_dict[motHeader]
-needed_motHeader_indices = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+motHeader_distance_indices = [1,2,3]
+motHeader_angle_indices = [4,5,6,7,8,9,10,11,12,13,14,15,16,17]
 
+def toRadian(angle):
+	return angle/180*3.14
 ####################################################################################
 
 ## Simulate values from the mot file
@@ -140,15 +143,11 @@ with open("subject02_running_arms_ik.mot") as f:
 	for line in f.readlines():
 		#convert strings to floats
 		values = [float(x) for x in line.split()]
-		for substep in range(10):
-			for motHeader_index in needed_motHeader_indices:
-				model.setStateVariableValue(state,getStateVariableName(headers[motHeader_index]),values[motHeader_index])
-			model.assemble(state)
-			integrate(values[0])
-		for motHeader_index in needed_motHeader_indices:
-			print(headers[motHeader_index],model.getStateVariableValue(state,getStateVariableName(headers[motHeader_index])))
-		count+=1
-		# time.sleep(2)
-		if(count==100):
-			break	
+		for motHeader_index in motHeader_distance_indices:
+			model.setStateVariableValue(state,getStateVariableName(headers[motHeader_index]),values[motHeader_index])
+		for motHeader_index in motHeader_angle_indices:
+			model.setStateVariableValue(state,getStateVariableName(headers[motHeader_index]),toRadian(values[motHeader_index]))
+		model.assemble(state)
+		integrate(values[0])
+		
 ####################################################################################
